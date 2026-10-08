@@ -1,0 +1,83 @@
+# Little Drive
+
+An open-source Three.js driving playground by [gcusms](https://github.com/gcusms).
+
+[在线体验 / Live demo](https://share.workstudioai.top/demos/car.html) · [作品广场 / Share](https://share.workstudioai.top/)
+
+![Little Drive](assets/work-car-start-v4.webp)
+
+## 功能
+
+- WASD、方向键或手机多点触控驾驶，前进、倒车、转向和刹车。
+- 左键拖动旋转视角，右键拖动平移，R 恢复跟随视角，不重置车辆。
+- 跟随 / 俯视视角、暂停、车辆重置。
+- 昼夜切换、6 种车身颜色、3 种轮胎样式，自动保存外观设置。
+- 动态红黄绿灯、斑马线，最多 2 辆随机车辆和 3 名方块行人。
+- 其他车辆等待红灯；行人沿路边行走，等候过街时段，穿过斑马线后离开。
+- 原生抗锯齿、柔和阴影、自适应高分辨率渲染。
+- 中文 / English，图标控制与无障碍标签。
+
+这是浏览器里的驾驶原型，不连接真实车辆。玩家车辆目前可以自由驾驶，没有强制执行交通信号或与 NPC 碰撞的规则。
+
+## 本地运行 / Run locally
+
+不需要构建，不需要 npm 安装。使用 HTTP 服务打开页面，不能直接双击 HTML 文件加载 ES Modules。
+
+```bash
+git clone https://github.com/GCUSMS-AI-ProJect/little_drive.git
+cd little_drive
+python3 -m http.server 8000 --bind 127.0.0.1
+```
+
+打开 http://127.0.0.1:8000/ 。Windows 可用 `py -m http.server 8000 --bind 127.0.0.1`。
+浏览器需要支持 WebGL 2，建议启用硬件加速。Three.js、字体及预览图片均随项目提供。
+
+## Controls
+
+| Control | Action |
+| --- | --- |
+| W / ↑ | Forward |
+| S / ↓ | Reverse |
+| A / ←, D / → | Steer |
+| Space | Brake |
+| Left mouse drag | Orbit the camera |
+| Right mouse drag | Pan the camera |
+| R | Restore the follow camera without resetting the car |
+| P | Pause / resume the scene |
+| Circular arrow button | Reset the car |
+
+On mobile, hold the arrow and brake buttons. Multiple buttons can be held together. Hover over desktop icon buttons for descriptions.
+
+## 项目结构 / Structure
+
+```text
+index.html                 Page and SVG controls
+assets/car.js              Driving, camera, appearance and rendering
+assets/car-traffic.js      Signal cycles, traffic and pixel-style pedestrians
+assets/car.css             Responsive interface
+assets/vendor/three-r180/  Three.js r180, MIT license
+assets/fonts/              Noto Serif SC subset, SIL Open Font License
+tests/traffic.mjs          Traffic simulation checks
+```
+
+交通与行人模型复用几何体并使用实例渲染；静态世界阴影缓存，动态小车使用接触阴影。
+方块行人及像素面部由本项目代码生成，无需下载人物贴图。
+
+## 验证 / Tests
+
+With Node.js 20 or newer:
+
+```bash
+npm test
+```
+
+Tests simulate 180 seconds of traffic, checking population limits, signal phases, red-light stops, safe pedestrian crossing phases and finite transforms.
+
+## Contributing
+
+欢迎通过 Issues 分享问题、想法和改进建议，或通过 Pull Request 贡献代码。
+Please include steps to reproduce a bug, browser/device information and a screenshot when relevant.
+
+## License
+
+原创代码采用 MIT 许可证，见 [LICENSE](LICENSE)。Three.js 的 MIT 许可证位于 `assets/vendor/three-r180/LICENSE`，字体许可证位于 `assets/fonts/OFL.txt`。不得将第三方依赖的许可归属替换为本项目归属。

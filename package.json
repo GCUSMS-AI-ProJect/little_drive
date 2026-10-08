@@ -1,0 +1,12 @@
+{
+  "name": "little-drive",
+  "version": "0.1.0",
+  "description": "A lightweight Three.js driving playground by gcusms",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "author": "gcusms",
+  "repository": "https://github.com/GCUSMS-AI-ProJect/little_drive.git",
+  "scripts": { "test": "node tests/traffic.mjs" },
+  "engines": { "node": ">=20" }
+}
