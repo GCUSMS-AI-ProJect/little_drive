@@ -5,3 +5,4 @@ Thumbs.db
 .env
 .env.*
 api-key.txt
+__pycache__/

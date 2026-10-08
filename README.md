@@ -9,7 +9,7 @@ An open-source Three.js driving playground by [gcusms](https://github.com/gcusms
 ## 功能
 
 - WASD、方向键或手机多点触控驾驶，前进、倒车、转向和刹车。
-- 左键拖动旋转视角，右键拖动平移，R 恢复跟随视角，不重置车辆。
+- 左键拖动旋转视角，右键拖动平移，滚轮平滑拉近 / 拉远，R 恢复默认跟随视角与缩放，不重置车辆。
 - 跟随 / 俯视视角、暂停、车辆重置。
 - 昼夜切换、6 种车身颜色、3 种轮胎样式，自动保存外观设置。
 - 动态红黄绿灯、斑马线，最多 2 辆随机车辆和 3 名方块行人。
@@ -42,7 +42,8 @@ python3 -m http.server 8000 --bind 127.0.0.1
 | Space | Brake |
 | Left mouse drag | Orbit the camera |
 | Right mouse drag | Pan the camera |
-| R | Restore the follow camera without resetting the car |
+| Mouse wheel | Smoothly zoom in / out in any camera mode |
+| R | Restore the default follow camera and zoom without resetting the car |
 | P | Pause / resume the scene |
 | Circular arrow button | Reset the car |
 
@@ -72,6 +73,17 @@ npm test
 ```
 
 Tests simulate 180 seconds of traffic, checking population limits, signal phases, red-light stops, safe pedestrian crossing phases and finite transforms.
+
+## 同步到 Share 网站
+
+今后只修改本仓库。确认效果后执行：
+
+```bash
+python3 scripts/publish.py
+```
+
+脚本先检查交通逻辑与页面资源，再同步小车资源与页面到 `/home/ubuntu/pi-web/shop/`，自动更新缓存版本。它不会修改广场页面或其他作品，也不会自动推送 GitHub。
+其他服务器可用 `--target /path/to/share` 指定发布目录。
 
 ## Contributing
 
