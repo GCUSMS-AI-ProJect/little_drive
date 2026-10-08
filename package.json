@@ -7,6 +7,6 @@
   "license": "MIT",
   "author": "gcusms",
   "repository": "https://github.com/GCUSMS-AI-ProJect/little_drive.git",
-  "scripts": { "test": "node tests/traffic.mjs" },
+  "scripts": { "test": "node tests/traffic.mjs && node tests/collision.mjs" },
   "engines": { "node": ">=20" }
 }

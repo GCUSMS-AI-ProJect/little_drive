@@ -13,11 +13,12 @@ An open-source Three.js driving playground by [gcusms](https://github.com/gcusms
 - 跟随 / 俯视视角、暂停、车辆重置。
 - 昼夜切换、6 种车身颜色、3 种轮胎样式，自动保存外观设置。
 - 动态红黄绿灯、斑马线，最多 2 辆随机车辆和 3 名方块行人。
+- 碰到车辆、行人、红绿灯杆或障碍物时停下，并提示换个方向；可以倒车离开。
 - 其他车辆等待红灯；行人沿路边行走，等候过街时段，穿过斑马线后离开。
 - 原生抗锯齿、柔和阴影、自适应高分辨率渲染。
 - 中文 / English，图标控制与无障碍标签。
 
-这是浏览器里的驾驶原型，不连接真实车辆。玩家车辆目前可以自由驾驶，没有强制执行交通信号或与 NPC 碰撞的规则。
+这是浏览器里的驾驶原型，不连接真实车辆。红绿灯控制随机车辆和行人通行；玩家目前不强制遵守信号，但无法穿过车辆、行人或灯杆。
 
 ## 本地运行 / Run locally
 
@@ -72,7 +73,7 @@ With Node.js 20 or newer:
 npm test
 ```
 
-Tests simulate 180 seconds of traffic, checking population limits, signal phases, red-light stops, safe pedestrian crossing phases and finite transforms.
+Tests simulate 180 seconds of traffic and check population limits, signal phases, red-light stops, pedestrian crossing and finite transforms. Collision tests cover rotated footprints, traffic light poles, vehicles, pedestrians, stopping and reversing away.
 
 ## 同步到 Share 网站
 

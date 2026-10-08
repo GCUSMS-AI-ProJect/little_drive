@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three-r180/three.module.min.js';
+import {overlaps} from './car-collision.js?v=1';
 
 function blockHead(){
  // Six tiny pixel faces share one atlas and one draw call. No image download.
@@ -18,7 +19,7 @@ function blockHead(){
 // Small reusable pools: no new geometry, objects or timers during animation.
 export function createTraffic(scene,materials,box){
  const layer=new THREE.Group();scene.add(layer);
- const crossings=[];
+ const crossings=[],poles=[];
  for(const z of [-10,10]){
   for(const offset of [-4.7,4.7]){crossings.push({z:z+offset});for(let x=-3.5;x<=3.5;x+=1)box(.55,.018,1.5,materials.line,x,.043,z+offset);}
   for(const x of [-16,0,16])for(const side of [-1,1]){if(x!==0&&Math.sign(x)===side)continue;for(let stripe=-2.8;stripe<=2.8;stripe+=.8)box(1.5,.018,.45,materials.line,x+side*5,.043,z+stripe);}
@@ -33,7 +34,7 @@ export function createTraffic(scene,materials,box){
     const px=x+(x===16?-4.5:4.5),pz=z+(z<0?-4.3:4.3);
     // The two heads face perpendicular approaches; both sides have visible lamps.
     const hx=px+(axis==='ew'?.8:0),hz=pz+(axis==='ns'?.65:0);
-    if(bulb===0){box(.1,3.7,.1,materials.stone,hx,1.85,hz);box(axis==='ew'?.3:.42,1,axis==='ew'?.42:.3,materials.dark,hx,3.35,hz);}
+    if(bulb===0){box(.1,3.7,.1,materials.stone,hx,1.85,hz);box(axis==='ew'?.3:.42,1,axis==='ew'?.42:.3,materials.dark,hx,3.35,hz);poles.push({x:hx,z:hz,w:.09,d:.09,kind:'signal'});}
     for(const face of [-1,1]){lampMatrix.makeTranslation(hx+(axis==='ew'?face*.19:0),3.63-bulb*.28,hz+(axis==='ns'?face*.19:0));mesh.setMatrixAt(i++,lampMatrix);}
    }mesh.instanceMatrix.needsUpdate=true;
   }
@@ -46,6 +47,9 @@ export function createTraffic(scene,materials,box){
  for(let i=0;i<3;i++){for(let j=0;j<3;j++)shirts.setColorAt(i*3+j,color.set(shirtColors[i]));for(let j=0;j<4;j++)legs.setColorAt(i*4+j,color.set(j<2?pantsColors[i]:0x423c38));}
  const cars=Array.from({length:2},(_,i)=>({active:false,wait:i===0?1:5,x:0,z:0,direction:1,speed:0,roll:0,stopped:false}));
  const people=Array.from({length:3},(_,i)=>({active:false,wait:1+i*2,x:0,z:0,direction:1,speed:0,walking:false,distance:0,stage:'waiting',crossingZ:0,sidewalkDirection:1,leavingDistance:0}));
+ cars.forEach(car=>Object.assign(car,{w:.96,d:1.48,heading:Math.PI/2,kind:'vehicle'}));
+ people.forEach(person=>Object.assign(person,{w:.5,d:.35,heading:0,kind:'person'}));
+ const colliders=[...cars,...people];
  function chooseCrossing(person){let selected=crossings[0],count=0;for(const crossing of crossings){if(people.some(other=>other!==person&&other.active&&Math.abs(other.crossingZ-crossing.z)<.6))continue;count++;if(Math.random()<1/count)selected=crossing;}return selected.z;}
  let elapsed=0,phase=-1,ns='red',ew='red';
  function setPart(mesh,index,x,y,z,w,h,d,rx=0,rz=0){part.position.set(x,y,z);part.rotation.set(rx,0,rz);part.scale.set(w,h,d);part.updateMatrix();matrix.multiplyMatrices(root.matrix,part.matrix);mesh.setMatrixAt(index,matrix);}
@@ -54,12 +58,14 @@ export function createTraffic(scene,materials,box){
   elapsed+=dt;const cycle=elapsed%40,nextPhase=cycle<12?0:cycle<14?1:cycle<16?2:cycle<28?3:cycle<30?4:5;
   if(nextPhase!==phase){phase=nextPhase;ns=phase===0?'green':phase===1?'amber':'red';ew=phase===3?'green':phase===4?'amber':'red';signal(ns,'ns');signal(ew,'ew');}
   cars.forEach((car,i)=>{
+   const spawning=!car.active;
    if(!car.active){car.wait-=dt;if(car.wait<=0){car.active=true;car.direction=Math.random()<.5?1:-1;car.z=(Math.random()<.5?-10:10)-car.direction*1.65;car.x=i===0?-car.direction*(7+Math.random()*2):-car.direction*23;car.speed=2.1+Math.random()*.6;car.roll=0;paint.setColorAt(i,color.set(carColors[Math.floor(Math.random()*carColors.length)]));}}
+   if(spawning&&car.active&&player.w&&overlaps(car,player)){car.active=false;car.wait=1;}
    let movement=0;car.stopped=false;
    if(car.active){movement=car.speed*dt;
     if(ew!=='green')for(const junction of [-16,0,16]){const stop=junction-car.direction*6.2,distance=(stop-car.x)*car.direction;if(distance>=-.02&&distance<movement+.02){movement=Math.max(0,distance);car.stopped=true;}}
     if(Math.abs(player.z-car.z)<2.2){const gap=(player.x-car.x)*car.direction;if(gap>0&&gap<3.8){movement=0;car.stopped=true;}}
-    car.x+=movement*car.direction;car.roll-=movement/.31;if(Math.abs(car.x)>24){car.active=false;car.wait=4+Math.random()*8;}
+    const oldX=car.x;car.x+=movement*car.direction;if(player.w&&overlaps(car,player)){car.x=oldX;movement=0;car.stopped=true;}car.roll-=movement/.31;if(Math.abs(car.x)>24){car.active=false;car.wait=4+Math.random()*8;}
    }
    root.position.set(car.x,0,car.z);root.rotation.set(0,-car.direction*Math.PI/2,0);root.scale.setScalar(car.active?1:0);root.updateMatrix();
    setPart(paint,i,0,.69,0,1.6,.48,2.85);setPart(cab,i,0,1.18,.1,1.25,.53,1.4);setPart(chassis,i,0,.39,0,1.5,.18,2.75);
@@ -67,14 +73,18 @@ export function createTraffic(scene,materials,box){
    for(let j=0;j<2;j++){setPart(front,i*2+j,j? .5:-.5,.76,-1.44,.25,.13,.035);setPart(rear,i*2+j,j? .5:-.5,.76,1.44,.25,.11,.035);}
   });
   people.forEach((person,i)=>{
+   const spawning=!person.active;
    if(!person.active){person.wait-=dt;if(person.wait<=0){person.active=true;person.stage='approach';person.direction=Math.random()<.5?1:-1;person.sidewalkDirection=Math.random()<.5?1:-1;person.x=-person.direction*5.3;person.crossingZ=chooseCrossing(person)+(Math.random()-.5)*.45;person.z=person.crossingZ-person.sidewalkDirection*2;person.speed=1.4+Math.random()*.15;person.distance=0;person.leavingDistance=0;}}
-   if(person.active){const distance=person.speed*dt;
+   if(spawning&&person.active&&player.w&&overlaps(person,player)){person.active=false;person.wait=1;}
+   let blocked=false;
+   if(person.active){const previous={x:person.x,z:person.z,distance:person.distance,stage:person.stage,leavingDistance:person.leavingDistance,active:person.active,wait:person.wait},distance=person.speed*dt;
     if(person.stage==='approach'){const step=Math.min(distance,Math.abs(person.crossingZ-person.z));person.z+=step*person.sidewalkDirection;person.distance+=step;if(Math.abs(person.crossingZ-person.z)<.001)person.stage='waiting';}
     if(person.stage==='waiting'&&cycle>=30&&cycle<31.5)person.stage='crossing';
     if(person.stage==='crossing'){person.x+=distance*person.direction;person.distance+=distance;if(person.x*person.direction>=5.3){person.x=person.direction*5.3;person.stage='leaving';}}
     else if(person.stage==='leaving'){person.z+=distance*person.sidewalkDirection;person.distance+=distance;person.leavingDistance+=distance;if(person.leavingDistance>=2){person.active=false;person.wait=8+Math.random()*12;}}
+    if(player.w&&overlaps(person,player)){Object.assign(person,previous);blocked=true;}
    }
-   person.walking=person.active&&person.stage!=='waiting';const stride=person.walking?Math.sin(person.distance*7)*.5:0;
+   person.walking=person.active&&person.stage!=='waiting'&&!blocked;const stride=person.walking?Math.sin(person.distance*7)*.5:0;
    const facing=person.stage==='crossing'||person.stage==='waiting'?-person.direction*Math.PI/2:person.sidewalkDirection>0?Math.PI:0;
    root.position.set(person.x,0,person.z);root.rotation.set(0,facing,0);root.scale.setScalar(person.active?1:0);root.updateMatrix();
    setPart(shirts,i*3,0,1.1,0,.48,.7,.28);setPart(heads,i,0,1.69,0,.48,.48,.48);
@@ -89,5 +99,5 @@ export function createTraffic(scene,materials,box){
  }
  // Give pooled colors a valid buffer before the first spawn.
  for(let i=0;i<2;i++)paint.setColorAt(i,color.set(carColors[i]));update(0,{x:0,z:11});
- return {update,getState:()=>({elapsed,ns,ew,crosswalks:crossings.length+8,signals:12,cars:cars.filter(c=>c.active).map(c=>({x:c.x,z:c.z,direction:c.direction,stopped:c.stopped})),people:people.filter(p=>p.active).map(p=>({x:p.x,z:p.z,walking:p.walking,stage:p.stage}))})};
+ return {update,getStaticColliders:()=>poles,getColliders:()=>colliders,getState:()=>({elapsed,ns,ew,crosswalks:crossings.length+8,signals:12,cars:cars.filter(c=>c.active).map(c=>({x:c.x,z:c.z,direction:c.direction,stopped:c.stopped})),people:people.filter(p=>p.active).map(p=>({x:p.x,z:p.z,walking:p.walking,stage:p.stage}))})};
 }

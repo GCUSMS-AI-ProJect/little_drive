@@ -28,6 +28,7 @@ def publish(target):
     if not node:
         raise ValueError('Node.js 20 or newer is required to run the pre-publish checks')
     subprocess.run([node, str(SOURCE / 'tests/traffic.mjs')], check=True)
+    subprocess.run([node, str(SOURCE / 'tests/collision.mjs')], check=True)
     files = sorted(path for path in (SOURCE / 'assets').rglob('*') if path.is_file())
     if any(path.is_symlink() for path in files):
         raise ValueError('Symbolic links are not publishable assets')
@@ -41,8 +42,10 @@ def publish(target):
         destination = target / source.relative_to(SOURCE)
         destination.parent.mkdir(parents=True, exist_ok=True)
         content = source.read_bytes()
-        if source.name == 'car.js':
-            content = re.sub(rb"car-traffic\.js(?:\?v=[^']+)?", ('car-traffic.js?v=' + version).encode(), content)
+        if source.suffix == '.js' and source.parent == SOURCE / 'assets':
+            content = re.sub(rb"(car-[a-z-]+\.js)(?:\?v=[^']+)?", lambda match: match[1] + ('?v=' + version).encode(), content)
+        if source.name == 'car.css':
+            content = re.sub(rb'(fonts/car-songti-[^)?]+\.woff2)(?:\?v=[^)]*)?', lambda match: match[1] + ('?v=' + version).encode(), content)
         # Replace each file atomically; assets are in place before the new HTML.
         with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as handle:
             handle.write(content)

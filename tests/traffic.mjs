@@ -21,4 +21,15 @@ assert(sawCars&&sawWaiting&&sawMoving&&sawPeople&&sawWalking,'Traffic spawns, wa
 assert.equal(signals.size,3,'Red, amber and green all appear');
 let dynamicCount=0;scene.traverse(mesh=>{if(mesh.isInstancedMesh){dynamicCount++;assert([...mesh.instanceMatrix.array].every(Number.isFinite),'Instance transforms remain finite');}});
 assert.equal(dynamicCount,16);
+const actors=traffic.getColliders(),car=actors.find(actor=>actor.kind==='vehicle'),person=actors.find(actor=>actor.kind==='person');
+actors.forEach(actor=>{actor.active=false;actor.wait=100;});
+Object.assign(car,{active:true,x:0,z:0,direction:1,speed:2});
+const parked={x:2.7,z:0,w:1.09,d:1.6,heading:0};
+for(let i=0;i<60;i++)traffic.update(1/60,parked);
+assert(car.stopped&&car.x===0,'A random car waits in front of the player');
+Object.assign(person,{active:true,x:-1.62,z:0,direction:1,speed:1.5,stage:'crossing',distance:0});
+const blockingPlayer={x:0,z:0,w:1.09,d:1.6,heading:0};
+traffic.update(.1,blockingPlayer);assert.equal(person.x,-1.62,'A pedestrian does not walk through the player');assert.equal(person.walking,false);
+blockingPlayer.z=5;traffic.update(.1,blockingPlayer);assert(person.x>-1.62&&person.walking,'A pedestrian continues when the car moves away');
+assert.equal(traffic.getStaticColliders().length,12,'All traffic light poles have footprints');
 console.log('PASS: 180 simulated seconds; bounded random traffic, red-light stops, green-light driving, pedestrian crossing, signal phases and finite transforms.');
